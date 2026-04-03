@@ -9,12 +9,14 @@ import { useChat } from '@/hooks/useChat';
 import { useCreateConversation } from '@/hooks/useConversations';
 import { useChatStore } from '@/store';
 import { useSettingsStore } from '@/store';
+import { Message } from '@/types';
 
 export function ChatWindow() {
   const router = useRouter();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const model = useSettingsStore((s) => s.model);
   const { messages, isLoading, isError, pendingMessage, sendMessage, isSending } = useChat();
+  const [optimisticMessage, setOptimisticMessage] = useState<Message>();
   const createConversation = useCreateConversation();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -32,6 +34,13 @@ export function ChatWindow() {
         convId = newConv._id;
         router.push(`/chat/${convId}`);
       }
+      setOptimisticMessage({
+        content,
+        _id: `optimistic-${Date.now()}`,
+        conversationId: activeConversationId ?? '',
+        role: 'user',
+        createdAt: new Date().toISOString(),
+      });
       await sendMessage(content, convId);
     } catch (e) {
       setSendError(e instanceof Error ? e.message : 'Failed to send message');
@@ -40,9 +49,7 @@ export function ChatWindow() {
 
   if (!model) {
     return (
-      <Box
-        sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}
-      >
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
         <Typography color="text.secondary" align="center">
           Open Settings and select an Ollama model to start chatting.
         </Typography>
@@ -77,7 +84,12 @@ export function ChatWindow() {
             </Typography>
           </Box>
         )}
-        {messages.map((msg) => (
+        {[
+          ...messages,
+          ...(optimisticMessage && (isSending || pendingMessage || sendError)
+            ? [optimisticMessage]
+            : []),
+        ].map((msg) => (
           <MessageBubble key={msg._id} message={msg} />
         ))}
         {(isSending || pendingMessage) && (
