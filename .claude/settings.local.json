@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm install:*)",
-      "Bash(powershell.exe -Command \"ls ''c:/Users/deepa/OneDrive/Desktop/Repos/ollama-studio-ui/src''\")"
-    ]
-  }
-}
